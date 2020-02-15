@@ -1,0 +1,10 @@
+[package]
+name = "single_pass"
+version = "0.1.0"
+authors = ["Daniel <qiuzhanghua@icloud.com>"]
+edition = "2018"
+
+[dependencies]
+jieba-rs = { version = "0.4", features = ["tfidf", "textrank"] }
+
+jemallocator = "0.3"
