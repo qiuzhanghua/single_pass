@@ -31,3 +31,8 @@ fn main() {
 //    }
 //    println!("{}ms", now.elapsed().as_millis());
 }
+
+
+// https://github.com/baiziyuandyufei/text_classification/blob/master/Chap3/%E5%A2%9E%E9%87%8F%E8%81%9A%E7%B1%BB.py
+// https://zhuanlan.zhihu.com/p/91007237?utm_source=ZHShareTargetIDMore&utm_medium=social&utm_oi=885424648970436608
+// https://zhuanlan.zhihu.com/p/65366198?utm_source=ZHShareTargetIDMore&utm_medium=social&utm_oi=885424648970436608

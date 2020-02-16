@@ -6,5 +6,5 @@ edition = "2018"
 
 [dependencies]
 jieba-rs = { version = "0.4", features = ["tfidf", "textrank"] }
-
+native_spark = { git = "https://github.com/rajasekarv/native_spark", branch = "master" }
 jemallocator = "0.3"
