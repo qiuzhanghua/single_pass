@@ -12,6 +12,7 @@ use csv::Trim::Headers;
 
 
 const THRESHOLD: f64 = 0.2;
+const DATA_DIR: &str = "data/car";
 
 fn main() {
 //    let mut docs = Vec::<Doc>::new();
@@ -21,56 +22,64 @@ fn main() {
 
     let mut now = time::Instant::now();
 
-    read_scv("data/part-00000.csv", &mut doc_map);
+    let paths = std::fs::read_dir(DATA_DIR).unwrap();
+    for path in paths {
+        doc_map.clear();
+ //       let mut doc_map = HashMap::<String, Doc>::new();
+        if let Ok(d) = path {
+            if d.path().is_file() {
+//                let file = File::open(d.path()).unwrap();
+                read_scv(&d.path().display().to_string(), &mut doc_map);
 
-    // for (id, doc) in &doc_map {
-    //     println!("{}", doc.features.len());
-    // }
-    //
-    // println!("{} ms", now.elapsed().as_millis());
+                // for (id, doc) in &doc_map {
+                //     println!("{}", doc.features.len());
+                // }
+                //
+                // println!("{} ms", now.elapsed().as_millis());
 
-    now = time::Instant::now();
+                now = time::Instant::now();
 
-    let mut count = 0;
+                let mut count = 0;
 
-    for (doc_id, doc) in &doc_map {
-        count += 1;
+                for (doc_id, doc) in &doc_map {
+                    count += 1;
 //        println!("{}, {}", count, doc_id);
-        let words = doc.features.clone();
-        let mut orphan = true;
-        for cluster_id in get_candidate_cluster(&words, &reverse_map) {
-            if let Some(cluster) = cluster_map.get_mut(&cluster_id)
-            {
-                if is_similar(&cluster, &doc, &doc_map) {
-                    cluster.members.insert(doc_id.clone());
-                    orphan = false;
-                    break;
-                }
-            }
-        };
-        if orphan {
-            let new_cluster_id = format!("cluster_{}", cluster_map.len());
-            let mut members = HashSet::<String>::new();
-            members.insert(doc_id.clone());
-            cluster_map.insert(new_cluster_id.clone(), Cluster {
-                id: new_cluster_id.clone(),
-                doc_id: doc_id.clone(),
-                members,
-            });
+                    let words = doc.features.clone();
+                    let mut orphan = true;
+                    for cluster_id in get_candidate_cluster(&words, &reverse_map) {
+                        if let Some(cluster) = cluster_map.get_mut(&cluster_id)
+                        {
+                            if is_similar(&cluster, &doc, &doc_map) {
+                                cluster.members.insert(doc_id.clone());
+                                orphan = false;
+                                break;
+                            }
+                        }
+                    };
+                    if orphan {
+                        let new_cluster_id = format!("cluster_{}", cluster_map.len());
+                        let mut members = HashSet::<String>::new();
+                        members.insert(doc_id.clone());
+                        cluster_map.insert(new_cluster_id.clone(), Cluster {
+                            id: new_cluster_id.clone(),
+                            doc_id: doc_id.clone(),
+                            members,
+                        });
 
-            for word in words {
-                if !reverse_map.contains_key(&word) {
-                    reverse_map.insert(word.clone(), HashSet::<String>::new());
-                };
-                reverse_map.get_mut(&word).unwrap().insert(new_cluster_id.clone());
+                        for word in words {
+                            if !reverse_map.contains_key(&word) {
+                                reverse_map.insert(word.clone(), HashSet::<String>::new());
+                            };
+                            reverse_map.get_mut(&word).unwrap().insert(new_cluster_id.clone());
+                        }
+                    }
+                }
+                println!("cluster len = {}", cluster_map.len());
+                println!("reverse map len = {}", reverse_map.len());
+                println!("{} ms", now.elapsed().as_millis());
             }
         }
     }
-
-    println!("cluster len = {}", cluster_map.len());
-    println!("reverse map len = {}", reverse_map.len());
-
-    println!("{} ms", now.elapsed().as_millis());
 }
 
 
