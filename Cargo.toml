@@ -1,10 +1,15 @@
 [package]
 name = "single_pass"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Daniel <qiuzhanghua@icloud.com>"]
 edition = "2018"
 
 [dependencies]
-jieba-rs = { version = "0.4", features = ["tfidf", "textrank"] }
-native_spark = { git = "https://github.com/rajasekarv/native_spark", branch = "master" }
-jemallocator = "0.3"
+csv = "1.1"
+encoding_rs = "0.8"
+encoding_rs_io = "0.1"
+serde = "1"
+serde_derive = "1"
+#jieba-rs = { version = "0.4", features = ["tfidf", "textrank"] }
+#native_spark = { git = "https://github.com/rajasekarv/native_spark", branch = "master" }
+#jemallocator = "0.3"
