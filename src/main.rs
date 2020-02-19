@@ -1,31 +1,33 @@
-#[macro_use]
-extern crate serde_derive;
+//#[macro_use]
+//extern crate serde_derive;
 
 use std::time;
 use std::error::Error;
 use std::fs::File;
-
+use dotenv::dotenv;
+use std::env;
 use encoding_rs::GB18030;
 use encoding_rs_io::DecodeReaderBytesBuilder;
 use std::collections::{HashMap, HashSet};
-use csv::Trim::Headers;
-
+use chrono::prelude::*;
 
 const THRESHOLD: f64 = 0.2;
-const DATA_DIR: &str = "data/car";
+const DATA_DIR: &str = "./data/";
 
 fn main() {
-//    let mut docs = Vec::<Doc>::new();
-    let mut doc_map = HashMap::<String, Doc>::new();
+    dotenv().ok();
+    let threshold = env::var("threshold").unwrap_or("0.2".to_string()).parse().unwrap_or(THRESHOLD);
+    let data_dir = env::var("data_dir").unwrap_or(DATA_DIR.to_string());
     let mut cluster_map = HashMap::<String, Cluster>::new(); //
     let mut reverse_map = HashMap::<String, HashSet<String>>::new(); // word -> cluster key collection
 
-    let mut now = time::Instant::now();
-
-    let paths = std::fs::read_dir(DATA_DIR).unwrap();
+    let begin: DateTime<Utc> = Utc::now();
+    println!("UTC now is: {}", begin);
+    let paths = std::fs::read_dir(data_dir).unwrap();
     for path in paths {
-        doc_map.clear();
- //       let mut doc_map = HashMap::<String, Doc>::new();
+        let mut doc_map = HashMap::<String, Doc>::new();
+        let now = time::Instant::now();
+
         if let Ok(d) = path {
             if d.path().is_file() {
 //                let file = File::open(d.path()).unwrap();
@@ -37,19 +39,17 @@ fn main() {
                 //
                 // println!("{} ms", now.elapsed().as_millis());
 
-                now = time::Instant::now();
-
-                let mut count = 0;
+//                let mut count = 0;
 
                 for (doc_id, doc) in &doc_map {
-                    count += 1;
+//                    count += 1;
 //        println!("{}, {}", count, doc_id);
                     let words = doc.features.clone();
                     let mut orphan = true;
                     for cluster_id in get_candidate_cluster(&words, &reverse_map) {
                         if let Some(cluster) = cluster_map.get_mut(&cluster_id)
                         {
-                            if is_similar(&cluster, &doc, &doc_map) {
+                            if is_similar(&cluster, &doc, &doc_map, threshold) {
                                 cluster.members.insert(doc_id.clone());
                                 orphan = false;
                                 break;
@@ -80,6 +80,9 @@ fn main() {
             }
         }
     }
+
+    let end: DateTime<Utc> = Utc::now();
+    println!("UTC now is: {}", end);
 }
 
 
@@ -119,7 +122,7 @@ fn read_scv(file_path: &str, doc_map: &mut HashMap<String, Doc>) -> Result<(), B
 }
 
 
-fn is_similar(cluster: &Cluster, doc: &Doc, doc_map: &HashMap<String, Doc>) -> bool {
+fn is_similar(cluster: &Cluster, doc: &Doc, doc_map: &HashMap<String, Doc>, threshold: f64) -> bool {
     let id = cluster.doc_id.clone();
     let cf = if let Some(d) = doc_map.get(&id) {
         d.features.clone()
@@ -130,7 +133,7 @@ fn is_similar(cluster: &Cluster, doc: &Doc, doc_map: &HashMap<String, Doc>) -> b
         df.intersection(&cf).collect::<HashSet<&String>>().len() as f64
             / df.union(&cf).collect::<HashSet<&String>>().len() as f64;
 //    println!("{:?}", x);
-    x > THRESHOLD
+    x > threshold
 }
 
 fn get_candidate_cluster(words: &HashSet<String>, reverse_map: &HashMap::<String, HashSet<String>>) -> HashSet<String> {
