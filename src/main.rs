@@ -69,7 +69,7 @@ fn main() {
 
     println!("cluster len = {}", cluster_map.len());
     println!("reverse map len = {}", reverse_map.len());
-    for x in cluster_map
+
     println!("{} ms", now.elapsed().as_millis());
 }
 
@@ -112,7 +112,7 @@ fn read_scv(file_path: &str, doc_map: &mut HashMap<String, Doc>) -> Result<(), B
 
 fn is_similar(cluster: &Cluster, doc: &Doc, doc_map: &HashMap<String, Doc>) -> bool {
     let id = cluster.doc_id.clone();
-    let cf = if let Some(mut d) = doc_map.get(&id) {
+    let cf = if let Some(d) = doc_map.get(&id) {
         d.features.clone()
     } else { HashSet::<String>::new() };
     let df = doc.features.clone();
@@ -150,6 +150,31 @@ struct Cluster {
     doc_id: String,
     // 第一篇文档ID
     members: HashSet<String>,  // 文档IDs
+}
+
+#[cfg(test)]
+mod tests {
+    use std::fs::File;
+    use std::io::{BufReader, BufRead};
+
+    #[test]
+    fn test_file() {
+        let paths = std::fs::read_dir("./").unwrap();
+        for path in paths {
+            if let Ok(d) = path {
+                if d.path().is_file() {
+                    let file = File::open(d.path()).unwrap();
+                    let reader = BufReader::new(file);
+                    for (index, line) in reader.lines().enumerate() {
+                        let line = line.unwrap(); // Ignore errors.
+                        // Show the line and its number.
+                        println!("{}. {}", index + 1, line);
+                    }
+                }
+            }
+//            println!("Name: {}", path.unwrap().path().display())
+        };
+    }
 }
 
 // https://github.com/baiziyuandyufei/text_classification/blob/master/Chap3/%E5%A2%9E%E9%87%8F%E8%81%9A%E7%B1%BB.py
