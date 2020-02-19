@@ -16,7 +16,8 @@ const DATA_DIR: &str = "./data/";
 
 fn main() {
     dotenv().ok();
-    let threshold = env::var("threshold").unwrap_or("0.2".to_string()).parse().unwrap_or(THRESHOLD);
+    let mut threshold = env::var("threshold").unwrap_or("0.2".to_string()).parse().unwrap_or(THRESHOLD);
+    threshold = threshold * threshold;
     let data_dir = env::var("data_dir").unwrap_or(DATA_DIR.to_string());
     let mut cluster_map = HashMap::<String, Cluster>::new(); //
     let mut reverse_map = HashMap::<String, HashSet<String>>::new(); // word -> cluster key collection
