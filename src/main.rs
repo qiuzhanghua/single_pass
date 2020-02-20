@@ -15,21 +15,22 @@ const THRESHOLD: f64 = 0.5;
 const DATA_DIR: &str = "./data/";
 
 fn main() {
-    use clap::{App, crate_version, crate_authors, load_yaml, value_t};
-    let yml = load_yaml!("cli.yml");
-    let matches = App::from_yaml(yml).about("Single Pass").author(crate_authors!()).version(crate_version!()).get_matches();
-    let mut threshold = value_t!(matches, "threshold", f64).unwrap_or(THRESHOLD);
-    threshold = threshold * threshold;
-    let data_dir  = value_t!(matches, "data_dir", String).unwrap_or(DATA_DIR.to_string());
-    // dotenv().ok();
-    // let mut threshold = env::var("threshold").unwrap_or("0.2".to_string()).parse().unwrap_or(THRESHOLD);
+    // use clap::{App, crate_version, crate_authors, load_yaml, value_t};
+    // let yml = load_yaml!("cli.yml");
+    // let matches = App::from_yaml(yml).about("Single Pass").author(crate_authors!()).version(crate_version!()).get_matches();
+    // let mut threshold = value_t!(matches, "threshold", f64).unwrap_or(THRESHOLD);
     // threshold = threshold * threshold;
-    // let data_dir = env::var("data_dir").unwrap_or(DATA_DIR.to_string());
+    // let data_dir  = value_t!(matches, "data_dir", String).unwrap_or(DATA_DIR.to_string());
+    dotenv().ok();
+    let mut threshold = env::var("threshold").unwrap_or("0.2".to_string()).parse().unwrap_or(THRESHOLD);
+    threshold = threshold * threshold;
+    let data_dir = env::var("data_dir").unwrap_or(DATA_DIR.to_string());
     let mut cluster_map = HashMap::<String, Cluster>::new(); //
     let mut reverse_map = HashMap::<String, HashSet<String>>::new(); // word -> cluster key collection
 
-    let begin: DateTime<Utc> = Utc::now();
-    println!("UTC now is: {}", begin);
+//    let begin: DateTime<Utc> = Utc::now();
+    let begin: DateTime<Local> = Local::now();
+    println!("Begin time is: {}", begin);
     let paths = std::fs::read_dir(data_dir).unwrap();
     for path in paths {
         let mut doc_map = HashMap::<String, Doc>::new();
@@ -88,8 +89,8 @@ fn main() {
         }
     }
 
-    let end: DateTime<Utc> = Utc::now();
-    println!("UTC now is: {}", end);
+    let end: DateTime<Local> = Local::now();
+    println!("End time is: {}", end);
 }
 
 
