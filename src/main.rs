@@ -1,15 +1,15 @@
 //#[macro_use]
 //extern crate serde_derive;
 
-use std::time;
-use std::error::Error;
-use std::fs::File;
+use chrono::prelude::*;
 use dotenv::dotenv;
-use std::env;
 use encoding_rs::GB18030;
 use encoding_rs_io::DecodeReaderBytesBuilder;
 use std::collections::{HashMap, HashSet};
-use chrono::prelude::*;
+use std::env;
+use std::error::Error;
+use std::fs::File;
+use std::time;
 
 const THRESHOLD: f64 = 0.5;
 const DATA_DIR: &str = "./data/";
@@ -22,13 +22,16 @@ fn main() {
     // threshold = threshold * threshold;
     // let data_dir  = value_t!(matches, "data_dir", String).unwrap_or(DATA_DIR.to_string());
     dotenv().ok();
-    let mut threshold = env::var("threshold").unwrap_or("0.2".to_string()).parse().unwrap_or(THRESHOLD);
+    let mut threshold = env::var("threshold")
+        .unwrap_or_else(|_| "0.2".to_string())
+        .parse()
+        .unwrap_or(THRESHOLD);
     threshold = threshold * threshold;
-    let data_dir = env::var("data_dir").unwrap_or(DATA_DIR.to_string());
+    let data_dir = env::var("data_dir").unwrap_or_else(|_| DATA_DIR.to_string());
     let mut cluster_map = HashMap::<String, Cluster>::new(); //
     let mut reverse_map = HashMap::<String, HashSet<String>>::new(); // word -> cluster key collection
 
-//    let begin: DateTime<Utc> = Utc::now();
+    //    let begin: DateTime<Utc> = Utc::now();
     let begin: DateTime<Local> = Local::now();
     println!("Begin time is: {}", begin);
     let paths = std::fs::read_dir(data_dir).unwrap();
@@ -38,47 +41,46 @@ fn main() {
 
         if let Ok(d) = path {
             if d.path().is_file() && d.path().to_str().unwrap().ends_with(".csv") {
-//                let file = File::open(d.path()).unwrap();
-                read_csv(d.path().to_str().unwrap(), &mut doc_map);
-
-                // for (id, doc) in &doc_map {
-                //     println!("{}", doc.features.len());
-                // }
-                //
-                // println!("{} ms", now.elapsed().as_millis());
-
-//                let mut count = 0;
+                //                let file = File::open(d.path()).unwrap();
+                if let Err(e) = read_csv(d.path().to_str().unwrap(), &mut doc_map) {
+                    panic!(e.to_string())
+                }
 
                 for (doc_id, doc) in &doc_map {
-//                    count += 1;
-//        println!("{}, {}", count, doc_id);
+                    //                    count += 1;
+                    //        println!("{}, {}", count, doc_id);
                     let words = doc.features.clone();
                     let mut orphan = true;
                     for cluster_id in get_candidate_cluster(&words, &reverse_map) {
-                        if let Some(cluster) = cluster_map.get_mut(&cluster_id)
-                        {
+                        if let Some(cluster) = cluster_map.get_mut(&cluster_id) {
                             if is_similar(&cluster, &doc, &doc_map, threshold) {
                                 cluster.members.insert(doc_id.clone());
                                 orphan = false;
                                 break;
                             }
                         }
-                    };
+                    }
                     if orphan {
                         let new_cluster_id = format!("cluster_{}", cluster_map.len());
                         let mut members = HashSet::<String>::new();
                         members.insert(doc_id.clone());
-                        cluster_map.insert(new_cluster_id.clone(), Cluster {
-                            id: new_cluster_id.clone(),
-                            doc_id: doc_id.clone(),
-                            members,
-                        });
+                        cluster_map.insert(
+                            new_cluster_id.clone(),
+                            Cluster {
+                                id: new_cluster_id.clone(),
+                                doc_id: doc_id.clone(),
+                                members,
+                            },
+                        );
 
                         for word in words {
                             if !reverse_map.contains_key(&word) {
                                 reverse_map.insert(word.clone(), HashSet::<String>::new());
                             };
-                            reverse_map.get_mut(&word).unwrap().insert(new_cluster_id.clone());
+                            reverse_map
+                                .get_mut(&word)
+                                .unwrap()
+                                .insert(new_cluster_id.clone());
                         }
                     }
                 }
@@ -93,7 +95,6 @@ fn main() {
     println!("End time is: {}", end);
 }
 
-
 fn read_csv(file_path: &str, doc_map: &mut HashMap<String, Doc>) -> Result<(), Box<dyn Error>> {
     println!("read file: {} ......", file_path);
     let file = File::open(file_path)?;
@@ -107,9 +108,11 @@ fn read_csv(file_path: &str, doc_map: &mut HashMap<String, Doc>) -> Result<(), B
         count += 1;
         let result = record.unwrap();
         let features = &result[1];
-        let x = features.trim_end_matches(']').trim_start_matches('[')
+        let x = features
+            .trim_end_matches(']')
+            .trim_start_matches('[')
             .split(',')
-            .map(|s| { s.trim().trim_start_matches('\'').trim_end_matches('\'') })
+            .map(|s| s.trim().trim_start_matches('\'').trim_end_matches('\''))
             .map(|s| s.to_string())
             .collect::<HashSet<String>>();
         let title = result[6].to_string();
@@ -117,11 +120,14 @@ fn read_csv(file_path: &str, doc_map: &mut HashMap<String, Doc>) -> Result<(), B
         // if count <= 6 { println!("{:?}", x) };
         // if count <= 6 { println!("{:?}", title) }
         // if count <= 6 { println!("{:?}", id) };
-        doc_map.insert(id.clone(), Doc {
-            id,
-            title,
-            features: x,
-        });
+        doc_map.insert(
+            id.clone(),
+            Doc {
+                id,
+                title,
+                features: x,
+            },
+        );
     }
     println!("read count = {:?}", count);
     println!("map len = {:?}", doc_map.len());
@@ -129,22 +135,30 @@ fn read_csv(file_path: &str, doc_map: &mut HashMap<String, Doc>) -> Result<(), B
     Ok(())
 }
 
-
-fn is_similar(cluster: &Cluster, doc: &Doc, doc_map: &HashMap<String, Doc>, threshold: f64) -> bool {
+fn is_similar(
+    cluster: &Cluster,
+    doc: &Doc,
+    doc_map: &HashMap<String, Doc>,
+    threshold: f64,
+) -> bool {
     let id = cluster.doc_id.clone();
     let cf = if let Some(d) = doc_map.get(&id) {
         d.features.clone()
-    } else { HashSet::<String>::new() };
+    } else {
+        HashSet::<String>::new()
+    };
     let df = doc.features.clone();
-//    println!("cf len = {:?}, df len = {:?}", cf.len(), df.len() );
-    let x =
-        df.intersection(&cf).collect::<HashSet<&String>>().len() as f64
-            / df.union(&cf).collect::<HashSet<&String>>().len() as f64;
-//    println!("{:?}", x);
+    //    println!("cf len = {:?}, df len = {:?}", cf.len(), df.len() );
+    let x = df.intersection(&cf).collect::<HashSet<&String>>().len() as f64
+        / df.union(&cf).collect::<HashSet<&String>>().len() as f64;
+    //    println!("{:?}", x);
     x > threshold
 }
 
-fn get_candidate_cluster(words: &HashSet<String>, reverse_map: &HashMap::<String, HashSet<String>>) -> HashSet<String> {
+fn get_candidate_cluster(
+    words: &HashSet<String>,
+    reverse_map: &HashMap<String, HashSet<String>>,
+) -> HashSet<String> {
     let mut ans = HashSet::<String>::new();
     for word in words {
         if let Some(m) = reverse_map.get(word) {
@@ -153,7 +167,7 @@ fn get_candidate_cluster(words: &HashSet<String>, reverse_map: &HashMap::<String
             }
         }
     }
-//    if ans.len() > 0  { println!("{:?}", ans); }
+    //    if ans.len() > 0  { println!("{:?}", ans); }
     ans
 }
 
@@ -169,13 +183,13 @@ struct Cluster {
     id: String,
     doc_id: String,
     // 第一篇文档ID
-    members: HashSet<String>,  // 文档IDs
+    members: HashSet<String>, // 文档IDs
 }
 
 #[cfg(test)]
 mod tests {
     use std::fs::File;
-    use std::io::{BufReader, BufRead};
+    use std::io::{BufRead, BufReader};
 
     #[test]
     fn test_file() {
@@ -194,8 +208,8 @@ mod tests {
                 //     }
                 // }
             }
-//            println!("Name: {}", path.unwrap().path().display())
-        };
+            //            println!("Name: {}", path.unwrap().path().display())
+        }
     }
 }
 
