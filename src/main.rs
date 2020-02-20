@@ -11,14 +11,20 @@ use encoding_rs_io::DecodeReaderBytesBuilder;
 use std::collections::{HashMap, HashSet};
 use chrono::prelude::*;
 
-const THRESHOLD: f64 = 0.2;
+const THRESHOLD: f64 = 0.5;
 const DATA_DIR: &str = "./data/";
 
 fn main() {
-    dotenv().ok();
-    let mut threshold = env::var("threshold").unwrap_or("0.2".to_string()).parse().unwrap_or(THRESHOLD);
+    use clap::{App, crate_version, crate_authors, load_yaml, value_t};
+    let yml = load_yaml!("cli.yml");
+    let matches = App::from_yaml(yml).about("Single Pass").author(crate_authors!()).version(crate_version!()).get_matches();
+    let mut threshold = value_t!(matches, "threshold", f64).unwrap_or(THRESHOLD);
     threshold = threshold * threshold;
-    let data_dir = env::var("data_dir").unwrap_or(DATA_DIR.to_string());
+    let data_dir  = value_t!(matches, "data_dir", String).unwrap_or(DATA_DIR.to_string());
+    // dotenv().ok();
+    // let mut threshold = env::var("threshold").unwrap_or("0.2".to_string()).parse().unwrap_or(THRESHOLD);
+    // threshold = threshold * threshold;
+    // let data_dir = env::var("data_dir").unwrap_or(DATA_DIR.to_string());
     let mut cluster_map = HashMap::<String, Cluster>::new(); //
     let mut reverse_map = HashMap::<String, HashSet<String>>::new(); // word -> cluster key collection
 
@@ -30,9 +36,9 @@ fn main() {
         let now = time::Instant::now();
 
         if let Ok(d) = path {
-            if d.path().is_file() {
+            if d.path().is_file() && d.path().to_str().unwrap().ends_with(".csv") {
 //                let file = File::open(d.path()).unwrap();
-                read_scv(&d.path().display().to_string(), &mut doc_map);
+                read_csv(d.path().to_str().unwrap(), &mut doc_map);
 
                 // for (id, doc) in &doc_map {
                 //     println!("{}", doc.features.len());
@@ -87,7 +93,7 @@ fn main() {
 }
 
 
-fn read_scv(file_path: &str, doc_map: &mut HashMap<String, Doc>) -> Result<(), Box<dyn Error>> {
+fn read_csv(file_path: &str, doc_map: &mut HashMap<String, Doc>) -> Result<(), Box<dyn Error>> {
     println!("read file: {} ......", file_path);
     let file = File::open(file_path)?;
     let transcoded = DecodeReaderBytesBuilder::new()
@@ -175,15 +181,17 @@ mod tests {
         let paths = std::fs::read_dir("./").unwrap();
         for path in paths {
             if let Ok(d) = path {
-                if d.path().is_file() {
-                    let file = File::open(d.path()).unwrap();
-                    let reader = BufReader::new(file);
-                    for (index, line) in reader.lines().enumerate() {
-                        let line = line.unwrap(); // Ignore errors.
-                        // Show the line and its number.
-                        println!("{}. {}", index + 1, line);
-                    }
-                }
+                println!("{:?}", d.path());
+                println!("{:?}", d.path().to_str().unwrap().ends_with(".csv"));
+                // if d.path().is_file() && d.path().to_str().unwrap().ends_with(".csv") {
+                //     let file = File::open(d.path()).unwrap();
+                //     let reader = BufReader::new(file);
+                //     for (index, line) in reader.lines().enumerate() {
+                //         let line = line.unwrap(); // Ignore errors.
+                //         // Show the line and its number.
+                //         println!("{}. {}", index + 1, line);
+                //     }
+                // }
             }
 //            println!("Name: {}", path.unwrap().path().display())
         };

@@ -1,0 +1,19 @@
+name: single_pass
+version: "1.0"
+author: Daniel <qiuzhanghua@icloud.com>
+about: Do Single Pass
+args:
+  - threshold:
+      short: t
+      long: threshold
+      value_name: THRESHOLD
+      help: Set thredhold of cluster
+      required: true
+      takes_value: true
+  - data_dir:
+      short: d
+      long: data_dir
+      value_name: DATA_DIR
+      help: Where to read data
+      required: true
+      takes_value: true

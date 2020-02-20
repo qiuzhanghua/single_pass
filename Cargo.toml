@@ -1,6 +1,6 @@
 [package]
 name = "single_pass"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["Daniel <qiuzhanghua@icloud.com>"]
 edition = "2018"
 
@@ -12,6 +12,7 @@ serde = "1"
 serde_derive = "1"
 dotenv = "0.15"
 chrono = "0.4"
+clap = {version = "2", features=["yaml"]}
 #jieba-rs = { version = "0.4", features = ["tfidf", "textrank"] }
 #native_spark = { git = "https://github.com/rajasekarv/native_spark", branch = "master" }
 #jemallocator = "0.3"
