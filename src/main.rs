@@ -1,3 +1,5 @@
+//! Single Pass
+
 //#[macro_use]
 //extern crate serde_derive;
 
