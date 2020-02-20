@@ -11,23 +11,31 @@ use std::error::Error;
 use std::fs::File;
 use std::time;
 
-const THRESHOLD: f64 = 0.5;
+const THRESHOLD: f64 = 0.01;
 const DATA_DIR: &str = "./data/";
 
 fn main() {
-    // use clap::{App, crate_version, crate_authors, load_yaml, value_t};
-    // let yml = load_yaml!("cli.yml");
-    // let matches = App::from_yaml(yml).about("Single Pass").author(crate_authors!()).version(crate_version!()).get_matches();
-    // let mut threshold = value_t!(matches, "threshold", f64).unwrap_or(THRESHOLD);
-    // threshold = threshold * threshold;
-    // let data_dir  = value_t!(matches, "data_dir", String).unwrap_or(DATA_DIR.to_string());
+    use clap::{crate_authors, crate_version, load_yaml, value_t, App};
+    let yml = load_yaml!("cli.yml");
+    let matches = App::from_yaml(yml)
+        .about("Single Pass")
+        .author(crate_authors!())
+        .version(crate_version!())
+        .get_matches();
     dotenv().ok();
     let mut threshold = env::var("threshold")
         .unwrap_or_else(|_| "0.2".to_string())
         .parse()
         .unwrap_or(THRESHOLD);
     threshold = threshold * threshold;
-    let data_dir = env::var("data_dir").unwrap_or_else(|_| DATA_DIR.to_string());
+    let mut data_dir = env::var("data_dir").unwrap_or_else(|_| DATA_DIR.to_string());
+    if matches.is_present("threshold") {
+        threshold = value_t!(matches, "threshold", f64).unwrap_or(THRESHOLD);
+        threshold = threshold * threshold;
+    }
+    if matches.is_present("data_dir") {
+        data_dir = value_t!(matches, "data_dir", String).unwrap_or_else(|_| DATA_DIR.to_string());
+    }
     let mut cluster_map = HashMap::<String, Cluster>::new(); //
     let mut reverse_map = HashMap::<String, HashSet<String>>::new(); // word -> cluster key collection
 
