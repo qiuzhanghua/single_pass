@@ -9,6 +9,8 @@ pub mod lcs {
     /// assert_eq!(longest_common_substr("doyou", "i do"), 2);
     /// ```
     pub fn longest_common_substr(x: &str, y: &str) -> i32 {
+        let x = x.chars().collect::<Vec<char>>();
+        let y = y.chars().collect::<Vec<char>>();
         let m = x.len();
         let n = y.len();
         let mut ans = 0;
@@ -16,7 +18,7 @@ pub mod lcs {
         for i in 0..=m {
             for j in 0..=n {
                 if i == 0 || j == 0 {
-                } else if x.chars().nth(i - 1) == y.chars().nth(j - 1) {
+                } else if x[i - 1] == y[j - 1] {
                     dp[i][j] = dp[i - 1][j - 1] + 1;
                     ans = std::cmp::max(ans, dp[i][j]);
                 }
